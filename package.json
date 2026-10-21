@@ -2,7 +2,15 @@
   "name": "superclean",
   "version": "0.1.0",
   "description": "Clean out node_modules, build output, Expo ios/android folders, Next.js cache and Docker. Clean it all.",
-  "keywords": ["cleanup", "node_modules", "disk-space", "expo", "nextjs", "docker", "cli"],
+  "keywords": [
+    "cleanup",
+    "node_modules",
+    "disk-space",
+    "expo",
+    "nextjs",
+    "docker",
+    "cli"
+  ],
   "license": "Apache-2.0",
   "author": "Thomas Hagström",
   "repository": {
@@ -12,13 +20,18 @@
   "bin": {
     "superclean": "bin/superclean.sh"
   },
-  "files": ["bin"],
-  "os": ["darwin", "linux"],
+  "files": [
+    "bin"
+  ],
+  "os": [
+    "darwin",
+    "linux"
+  ],
   "scripts": {
     "clean": "bash bin/superclean.sh",
-    "clean:yes": "bash bin/superclean.sh --yes",
-    "clean:docker": "bash bin/superclean.sh --docker",
-    "clean:all": "bash bin/superclean.sh --docker --yes",
+    "clean:yes": "sh -c 'p=$1; [ $# -gt 0 ] && shift; bash bin/superclean.sh \"$p\" --yes \"$@\"' superclean",
+    "clean:docker": "sh -c 'p=$1; [ $# -gt 0 ] && shift; bash bin/superclean.sh \"$p\" --docker \"$@\"' superclean",
+    "clean:all": "sh -c 'p=$1; [ $# -gt 0 ] && shift; bash bin/superclean.sh \"$p\" --docker --yes \"$@\"' superclean",
     "test": "bash test/superclean.test.sh"
   }
 }

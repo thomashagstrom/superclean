@@ -45,6 +45,10 @@ if [ "$#" -eq 0 ]; then
   fail "a target path is required, e.g. superclean ~/Source"
 fi
 
+if [ -z "$1" ]; then
+  fail "the target path is empty (did you forget to pass one after \`--\`?)"
+fi
+
 case "$1" in
   --help|-h) usage; exit 0 ;;
   -*) fail "the target path must be the first argument (got option: $1)" ;;

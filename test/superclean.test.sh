@@ -78,6 +78,33 @@ PATH="$STUB:$PATH" bash "$BIN" "$T" --docker-all --yes >/dev/null
 check "--docker-all --yes prunes all" grep -q 'system prune --force --all' "$T/calls"
 check "volumes never pruned"       bash -c "! grep -q volume '$T/calls'"
 
+# Every documented npm script, run exactly as the README shows them. npm appends the
+# path after the script, so this guards against the path ending up behind a flag.
+echo "npm scripts (as documented in the README)"
+REPO="$(cd "$(dirname "$BIN")/.." && pwd)"
+mk() { rm -rf "$T/n"; mkdir -p "$T/n/app/node_modules" "$T/n/sp ace/node_modules"; touch "$T/n/app/package.json" "$T/n/sp ace/package.json"; : > "$T/calls"; }
+npmrun() { (cd "$REPO" && PATH="$STUB:$PATH" npm run -s "$@" 2>&1); }
+mk; check "clean: dry run"            bash -c "$(declare -f npmrun); STUB='$STUB' REPO='$REPO' npmrun clean -- '$T/n' >/dev/null"
+check "…deleted nothing"             kept n/app/node_modules
+check "clean:yes: deletes"           bash -c "$(declare -f npmrun); STUB='$STUB' REPO='$REPO' npmrun clean:yes -- '$T/n' >/dev/null"
+check "…node_modules gone"           gone n/app/node_modules
+mk; check "clean:docker: runs, no prune" bash -c "$(declare -f npmrun); STUB='$STUB' REPO='$REPO' npmrun clean:docker -- '$T/n' >/dev/null"
+check "…deleted nothing"             kept n/app/node_modules
+check "…did not prune"               bash -c "! grep -q prune '$T/calls'"
+mk; check "clean:all: runs"          bash -c "$(declare -f npmrun); STUB='$STUB' REPO='$REPO' npmrun clean:all -- '$T/n' >/dev/null"
+check "…node_modules gone"           gone n/app/node_modules
+check "…pruned docker"               grep -q 'system prune --force' "$T/calls"
+check "…never pruned volumes"        bash -c "! grep -q volume '$T/calls'"
+mk; check "path with a space works"  bash -c "$(declare -f npmrun); STUB='$STUB' REPO='$REPO' npmrun clean:yes -- '$T/n/sp ace' >/dev/null"
+check "…deleted it"                  gone "n/sp ace/node_modules"
+mk
+for s in clean clean:yes clean:docker clean:all; do
+  check "$s with no path refuses"    bash -c "$(declare -f npmrun); STUB='$STUB' REPO='$REPO'; ! npmrun $s >/dev/null"
+done
+check "…and deleted nothing"         kept n/app/node_modules
+check "…and did not call docker"     bash -c "! grep -q . '$T/calls'"
+check "empty path refused"           bash -c "! bash '$BIN' '' 2>/dev/null"
+
 echo
 if [ "$FAILS" -gt 0 ]; then echo "$FAILS check(s) failed"; exit 1; fi
 echo "all checks passed"
