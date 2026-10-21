@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # superclean — reclaim disk space from regenerable JS/Expo artifacts and Docker.
 #
-# Scans a directory (default: where you ran it) and removes:
+# Requires a target directory as the FIRST argument and removes, under it:
 #   node_modules  — always
 #   .next         — Next.js build output/cache; only next to a package.json
 #   build         — only next to a package.json
@@ -20,15 +20,13 @@
 # and BSD tools; no dependencies.
 set -euo pipefail
 
-# Under `npm run`, the cwd is the package dir; INIT_CWD is where you ran npm.
-ROOT_DIR="${INIT_CWD:-$PWD}"
 DELETE=false
 DOCKER=false
 DOCKER_ALL=false
 
 usage() {
-  echo "Usage: superclean [path] [--yes] [--docker | --docker-all]"
-  echo "  path          directory to scan (default: current directory)"
+  echo "Usage: superclean <path> [--yes] [--docker | --docker-all]"
+  echo "  <path>        directory to scan (required, must be the first argument)"
   echo "  (no flags)    dry run — list directories to clean and total size"
   echo "  --yes / -y    actually delete them"
   echo "  --docker      also prune stopped containers, unused networks,"
@@ -36,24 +34,41 @@ usage() {
   echo "  --docker-all  like --docker, but removes all unused images too"
 }
 
+fail() {
+  echo "superclean: $1" >&2
+  echo >&2
+  usage >&2
+  exit 1
+}
+
+if [ "$#" -eq 0 ]; then
+  fail "a target path is required, e.g. superclean ~/Source"
+fi
+
+case "$1" in
+  --help|-h) usage; exit 0 ;;
+  -*) fail "the target path must be the first argument (got option: $1)" ;;
+esac
+
+# Under `npm run`, the cwd is the package dir; INIT_CWD is where you ran npm,
+# which is what a relative path like `.` should be resolved against.
+if [ ! -d "${INIT_CWD:-$PWD}/$1" ] && [ ! -d "$1" ]; then
+  fail "not a directory: $1"
+fi
+case "$1" in
+  /*) ROOT_DIR="$(cd "$1" && pwd)" ;;
+  *)  ROOT_DIR="$(cd "${INIT_CWD:-$PWD}" && cd "$1" && pwd)" ;;
+esac
+shift
+
 for arg in "$@"; do
   case "$arg" in
     --yes|-y) DELETE=true ;;
     --docker) DOCKER=true ;;
     --docker-all) DOCKER=true; DOCKER_ALL=true ;;
     --help|-h) usage; exit 0 ;;
-    -*)
-      echo "Unknown option: $arg" >&2
-      usage >&2
-      exit 1
-      ;;
-    *)
-      if [ ! -d "$arg" ]; then
-        echo "Not a directory: $arg" >&2
-        exit 1
-      fi
-      ROOT_DIR="$(cd "$arg" && pwd)"
-      ;;
+    -*) fail "unknown option: $arg" ;;
+    *)  fail "unexpected argument: $arg (only one target path is allowed, and it must come first)" ;;
   esac
 done
 

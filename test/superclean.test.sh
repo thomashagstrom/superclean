@@ -49,8 +49,25 @@ check ".git never entered"         kept expo/.git/build
 
 echo "rerun and bad input"
 check "rerun is a no-op"           bash "$BIN" "$T" --yes
-check "unknown flag rejected"      bash -c "! bash '$BIN' --bogus 2>/dev/null"
+check "unknown flag rejected"      bash -c "! bash '$BIN' '$T' --bogus 2>/dev/null"
 check "missing path rejected"      bash -c "! bash '$BIN' /no/such/dir 2>/dev/null"
+
+echo "target path is required"
+mkdir -p "$T/cwd/node_modules"; touch "$T/cwd/package.json"
+check "no arguments rejected"      bash -c "cd '$T/cwd' && ! bash '$BIN' 2>/dev/null"
+check "--yes without a path rejected" bash -c "cd '$T/cwd' && ! bash '$BIN' --yes 2>/dev/null"
+check "…and deleted nothing"       kept cwd/node_modules
+check "flag before the path rejected" bash -c "! bash '$BIN' --yes '$T/cwd' 2>/dev/null"
+check "…and deleted nothing (flag first)" kept cwd/node_modules
+check "second path rejected"       bash -c "! bash '$BIN' '$T/cwd' '$T/web' 2>/dev/null"
+check "--help works without a path" bash -c "bash '$BIN' --help >/dev/null"
+# npm sets INIT_CWD (where you ran npm); a plain shell doesn't. Control it explicitly.
+mkdir -p "$T/rel1/node_modules" "$T/rel2/node_modules"; touch "$T/rel1/package.json" "$T/rel2/package.json"
+check "relative path resolves from cwd"  bash -c "cd '$T' && env -u INIT_CWD bash '$BIN' rel1 --yes >/dev/null"
+check "…and deleted it"            gone rel1/node_modules
+check "relative path resolves from npm's INIT_CWD" bash -c "cd / && INIT_CWD='$T' bash '$BIN' rel2 --yes >/dev/null"
+check "…and deleted it (INIT_CWD)" gone rel2/node_modules
+check "'.' works as an explicit path" bash -c "cd '$T/cwd' && env -u INIT_CWD bash '$BIN' . >/dev/null"
 
 echo "docker"
 STUB="$T/stub"; mkdir -p "$STUB"

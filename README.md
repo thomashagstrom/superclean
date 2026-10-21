@@ -64,7 +64,7 @@ Or run it straight from GitHub without cloning:
 npx github:thomashagstrom/superclean ~/Source
 ```
 
-With no path, Supercleaner scans the directory you are standing in.
+The target path is **required** and must come first. Run it with no path and Supercleaner refuses, so a stray `--yes` can never sweep whatever folder you happen to be standing in. Want the current folder? Say so explicitly with `.`
 
 ## 🐳 Docker
 
@@ -81,20 +81,22 @@ If Docker Desktop's engine is stopped or crashed (a full disk is a common cause)
 
 | Command | What it does |
 |---|---|
-| `superclean [path]` | Preview what would be removed (default: current directory) |
-| `superclean [path] --yes` | Actually delete it |
-| `superclean [path] --docker` | Also show Docker disk usage; with `--yes`, prune it |
-| `superclean [path] --docker-all` | Like `--docker`, but remove all unused images too |
+| `superclean <path>` | Preview what would be removed under `<path>` |
+| `superclean <path> --yes` | Actually delete it |
+| `superclean <path> --docker` | Also show Docker disk usage; with `--yes`, prune it |
+| `superclean <path> --docker-all` | Like `--docker`, but remove all unused images too |
 | `superclean --help` | Show usage |
+
+`<path>` is always the first argument. Options come after it.
 
 | npm script | Same as |
 |---|---|
-| `npm run clean` | `superclean` |
-| `npm run clean:yes` | `superclean --yes` |
-| `npm run clean:docker` | `superclean --docker` |
-| `npm run clean:all` | `superclean --docker --yes` |
+| `npm run clean -- <path>` | `superclean <path>` |
+| `npm run clean:yes -- <path>` | `superclean <path> --yes` |
+| `npm run clean:docker -- <path>` | `superclean <path> --docker` |
+| `npm run clean:all -- <path>` | `superclean <path> --docker --yes` |
 
-Pass the folder after `--`, e.g. `npm run clean -- ~/Source`.
+The path goes after `--`, e.g. `npm run clean -- ~/Source`. A relative path like `.` is resolved from the folder you ran npm in.
 
 ## 💡 Good to know
 
